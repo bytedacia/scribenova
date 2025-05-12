@@ -1,5 +1,7 @@
 # ScribeNova
 
+by bytes(vnxflow)
+
 Sistema di generazione di libri basato su DeepSeek e Google Gemini.
 
 ## Caratteristiche principali
