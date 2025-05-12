@@ -1,4 +1,5 @@
 {
+    "model_name": "ScribeNova",
     "vocab_size": 102400,
     "dim": 2048,
     "inter_dim": 10944,

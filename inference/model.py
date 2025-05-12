@@ -51,8 +51,8 @@ class ModelArgs:
         beta_slow (int): Slow beta correction factor.
         mscale (float): Scaling factor for extended attention.
     """
-    max_batch_size: int = 8
-    max_seq_len: int = 4096 * 4
+    max_batch_size: int = 1024
+    max_seq_len: int = 2097152
     dtype: Literal["bf16", "fp8"] = "bf16"
     vocab_size: int = 102400
     dim: int = 2048
@@ -76,9 +76,9 @@ class ModelArgs:
     qk_rope_head_dim: int = 64
     v_head_dim: int = 128
     # yarn
-    original_seq_len: int = 4096
+    original_seq_len: int = 2097152
     rope_theta: float = 10000.0
-    rope_factor: float = 40
+    rope_factor: float = 1000
     beta_fast: int = 32
     beta_slow: int = 1
     mscale: float = 1.

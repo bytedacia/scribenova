@@ -359,3 +359,111 @@ This code repository is licensed under [the MIT License](LICENSE-CODE). The use 
 
 ## 9. Contact
 If you have any questions, please raise an issue or contact us at [service@deepseek.com](service@deepseek.com).
+
+# ScribeNova
+
+ScribeNova è un potente sistema di generazione di libri basato su DeepSeek e Google Gemini, progettato per creare opere letterarie complete e personalizzate.
+
+## Caratteristiche Principali
+
+- **Generazione di Libri Completi**: Crea libri fino a 500 pagine con struttura professionale
+- **Analisi dello Stile**: Utilizza Google Gemini per analizzare e imitare lo stile di scrittori famosi
+- **Interfaccia Web Intuitiva**: Editor avanzato con anteprima in tempo reale
+- **Sistema di Bozze**: Salva e riprendi il tuo lavoro in qualsiasi momento
+- **Generazione Naturale**: Testo scritto in modo umano con variazioni di stile
+
+## Requisiti
+
+- Python 3.8+
+- PyTorch
+- Flask
+- Google Gemini API
+- Altre dipendenze elencate in `requirements.txt`
+
+## Installazione
+
+1. Clona il repository:
+```bash
+git clone https://github.com/bytedacia/scribenova.git
+cd scribenova
+```
+
+2. Crea un ambiente virtuale e installa le dipendenze:
+```bash
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate     # Windows
+pip install -r requirements.txt
+```
+
+3. Crea un file `.env` nella directory principale e aggiungi la tua chiave API di Google:
+```
+GOOGLE_API_KEY=your_api_key_here
+```
+
+## Utilizzo
+
+1. Avvia il server web:
+```bash
+python inference/generate.py --ckpt-path /path/to/model --config inference/configs/config_16B.json --interactive
+```
+
+2. Apri il browser all'indirizzo `http://localhost:5000`
+
+3. Inizia a creare il tuo libro:
+   - Inserisci i dettagli del libro
+   - Scegli uno scrittore o un libro di riferimento
+   - Personalizza lo stile e la struttura
+   - Genera il libro
+
+## Funzionalità Avanzate
+
+### Analisi dello Stile
+ScribeNova utilizza Google Gemini per:
+- Analizzare lo stile di scrittori famosi
+- Estrarre elementi stilistici caratteristici
+- Adattare il contenuto generato allo stile scelto
+
+### Personalizzazione
+- Struttura dei capitoli
+- Lunghezza del testo
+- Tono della narrazione
+- Elementi culturali
+
+## Esempio di Utilizzo
+
+```python
+# Genera un libro in stile Umberto Eco
+book_details = {
+    "title": "Il Nome della Rosa 2.0",
+    "genre": "historical",
+    "reference_author": "Umberto Eco",
+    "target_pages": 500,
+    "style": "accademico e filosofico"
+}
+
+# Genera il libro
+book = generate_long_book(book_details)
+```
+
+## Contribuire
+
+Siamo aperti a contributi! Per favore:
+1. Fai un fork del repository
+2. Crea un branch per la tua feature
+3. Invia una pull request
+
+## Licenza
+
+MIT License
+
+## Contatti
+
+- Repository: https://github.com/bytedacia/scribenova
+- Issues: https://github.com/bytedacia/scribenova/issues
+
+## Ringraziamenti
+
+- DeepSeek per il modello di base
+- Google Gemini per l'analisi dello stile
+- Tutti i contributori del progetto
