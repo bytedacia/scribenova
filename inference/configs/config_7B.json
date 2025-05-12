@@ -1,6 +1,6 @@
 {
     "model_name": "ScribeNova-7B",
-    "vocab_size": 32000,
+    "vocab_size": 1000000,
     "dim": 4096,
     "inter_dim": 10944,
     "moe_inter_dim": 1408,
@@ -21,7 +21,7 @@
     "hidden_dim": 11008,
     "max_seq_len": null,
     "max_batch_size": null,
-    "rope_theta": 10000.0,
+    "rope_theta": 10000,
     "rope_scaling": {
         "type": "dynamic",
         "factor": 2.0

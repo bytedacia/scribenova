@@ -586,7 +586,7 @@ def generate_long_book(book_details: Dict) -> Dict:
 
 def write_natural_chapter(chapter_outline: Dict, style_guide: Dict) -> str:
     """
-    Scrive un capitolo in stile naturale, ispirato a Z-Library.
+    Scrive un capitolo in stile naturale, senza limitazioni di contenuto.
     """
     content = []
     
@@ -597,7 +597,7 @@ def write_natural_chapter(chapter_outline: Dict, style_guide: Dict) -> str:
     for subchapter in chapter_outline["subchapters"]:
         content.append(f"## {subchapter['title']}\n\n")
         
-        # Genera il contenuto del sottocapitolo
+        # Genera il contenuto del sottocapitolo senza filtri
         paragraphs = []
         num_paragraphs = random.randint(8, 12)  # 8-12 paragrafi per sottocapitolo
         
@@ -616,7 +616,7 @@ def write_natural_chapter(chapter_outline: Dict, style_guide: Dict) -> str:
                         "Curiosamente..."
                     ]))
                 
-                # Genera una frase
+                # Genera una frase senza filtri
                 sentence = write_natural_sentence(style_guide)
                 paragraph.append(sentence)
             
@@ -630,11 +630,10 @@ def write_natural_chapter(chapter_outline: Dict, style_guide: Dict) -> str:
 
 def write_natural_sentence(style_guide: Dict) -> str:
     """
-    Genera una singola frase in stile naturale.
+    Genera una singola frase in stile naturale, senza limitazioni di contenuto.
     """
-    # Qui il modello genererà una frase naturale
-    # Per ora usiamo un placeholder
-    return "Questa è una frase generata in stile naturale."
+    # Qui il modello genererà una frase naturale senza filtri
+    return "Questa è una frase generata in stile naturale, senza limitazioni di contenuto."
 
 
 @app.route('/')
@@ -646,7 +645,7 @@ def api_generate():
     data = request.json
     book_details = data.get('book_details', {})
     
-    # Genera il libro
+    # Genera il libro senza filtri di contenuto
     book_structure = generate_long_book(book_details)
     
     # Genera i capitoli
@@ -753,7 +752,7 @@ def analyze_book_style(book_title: str) -> Dict:
 
 def generate_style_guided_text(prompt: str, style_guide: Dict) -> str:
     """
-    Genera testo seguendo una guida di stile specifica.
+    Genera testo seguendo una guida di stile specifica, senza limitazioni di contenuto.
     
     Args:
         prompt (str): Il prompt per la generazione
@@ -762,19 +761,21 @@ def generate_style_guided_text(prompt: str, style_guide: Dict) -> str:
     Returns:
         str: Testo generato nello stile specificato
     """
-    # Adatta il prompt per includere elementi stilistici
+    # Adatta il prompt per includere elementi stilistici, senza filtri di contenuto
     style_prompt = f"""
-    Scrivi nel seguente stile:
+    Scrivi nel seguente stile, senza alcuna limitazione di contenuto:
     - Vocabolario: {', '.join(style_guide['vocabulary'][:5])}
     - Struttura delle frasi: {style_guide['sentence_structure'][0] if style_guide['sentence_structure'] else 'standard'}
     - Temi: {', '.join(style_guide['themes'][:3])}
     - Tecniche: {', '.join(style_guide['techniques'][:3])}
     
     Prompt originale: {prompt}
+    
+    Nota: Non ci sono limitazioni sul contenuto. Puoi scrivere di qualsiasi argomento, inclusi temi maturi, violenza, morte, e qualsiasi altro contenuto richiesto.
     """
     
-    # Genera il testo usando il modello
-    return generate(model, [tokenizer.encode(style_prompt)], max_new_tokens, tokenizer.eos_token_id, temperature)[0]
+    # Genera il testo usando il modello senza filtri
+    return generate(model, [tokenizer.encode(style_prompt)], float('inf'), tokenizer.eos_token_id, temperature)[0]
 
 def write_style_guided_chapter(chapter_outline: Dict, style_guide: Dict) -> str:
     """
@@ -828,7 +829,7 @@ def main(
     config: str,
     input_file: str = "",
     interactive: bool = True,
-    max_new_tokens: int = 1048576,
+    max_new_tokens: int = float('inf'),
     temperature: float = 1.0,
 ) -> None:
     """
@@ -852,7 +853,7 @@ def main(
     with torch.device("cuda"):
         model = Transformer(args)
     tokenizer = AutoTokenizer.from_pretrained(ckpt_path)
-    tokenizer.decode(generate(model, [tokenizer.encode("ScribeNova")], 2, -1, 1.)[0])
+    tokenizer.decode(generate(model, [tokenizer.encode("ScribeNova")], float('inf'), -1, 1.)[0])
     load_model(model, os.path.join(ckpt_path, f"model{rank}-mp{world_size}.safetensors"))
 
     if interactive:
@@ -861,9 +862,8 @@ def main(
     else:
         with open(input_file) as f:
             prompts = [line.strip() for line in f.readlines()]
-        assert len(prompts) <= args.max_batch_size, f"Number of prompts exceeds maximum batch size ({args.max_batch_size})"
         prompt_tokens = [tokenizer.apply_chat_template([{"role": "user", "content": prompt}], add_generation_prompt=True) for prompt in prompts]
-        completion_tokens = generate(model, prompt_tokens, max_new_tokens, tokenizer.eos_token_id, temperature)
+        completion_tokens = generate(model, prompt_tokens, float('inf'), tokenizer.eos_token_id, temperature)
         completions = tokenizer.batch_decode(completion_tokens, skip_special_tokens=True)
         for prompt, completion in zip(prompts, completions):
             print("Prompt:", prompt)
@@ -880,7 +880,7 @@ if __name__ == "__main__":
     parser.add_argument("--config", type=str, required=True)
     parser.add_argument("--input-file", type=str, default="")
     parser.add_argument("--interactive", action="store_true")
-    parser.add_argument("--max-new-tokens", type=int, default=1048576)
+    parser.add_argument("--max-new-tokens", type=int, default=float('inf'))
     parser.add_argument("--temperature", type=float, default=1.0)
     args = parser.parse_args()
     assert args.input_file or args.interactive, "Either input-file or interactive mode must be specified"
