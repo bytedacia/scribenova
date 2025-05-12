@@ -43,11 +43,13 @@
             border-bottom: 3px solid #0d6efd;
         }
         .preview-card {
-            height: 400px;
+            height: auto;
+            min-height: 400px;
             overflow-y: auto;
         }
         .draft-list {
-            max-height: 300px;
+            height: auto;
+            min-height: 300px;
             overflow-y: auto;
         }
         .draft-item {
@@ -99,7 +101,11 @@
                                 <option value="sci-fi">Sci-Fi</option>
                                 <option value="horror">Horror</option>
                                 <option value="biography">Biografia</option>
+                                <option value="custom">Altro (specificare)</option>
                             </select>
+                            <div id="customGenreInput" class="mt-2" style="display: none;">
+                                <input type="text" class="form-control" id="customGenre" placeholder="Inserisci il genere personalizzato">
+                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -130,12 +136,17 @@
                                 <option value="misterioso">Misterioso e intrigante</option>
                                 <option value="romantico">Romantico e sentimentale</option>
                                 <option value="avventuroso">Avventuroso e dinamico</option>
+                                <option value="custom">Altro (specificare)</option>
                             </select>
+                            <div id="customToneInput" class="mt-2" style="display: none;">
+                                <input type="text" class="form-control" id="customTone" placeholder="Inserisci il tono personalizzato">
+                            </div>
                         </div>
 
                         <div class="mb-3">
-                            <label for="pages" class="form-label">Numero di Pagine</label>
-                            <input type="number" class="form-control" id="pages" value="500" min="100" max="1000" required>
+                            <label for="pages" class="form-label">Numero di Pagine (opzionale)</label>
+                            <input type="number" class="form-control" id="pages" min="1">
+                            <small class="form-text text-muted">Lascia vuoto per generazione automatica</small>
                         </div>
 
                         <div class="mb-3">
@@ -144,7 +155,11 @@
                                 <option value="breve">Capitoli brevi e dinamici</option>
                                 <option value="lungo">Capitoli lunghi e dettagliati</option>
                                 <option value="misto">Misto (capitoli di lunghezza variabile)</option>
+                                <option value="custom">Personalizzata</option>
                             </select>
+                            <div id="customStructureInput" class="mt-2" style="display: none;">
+                                <div id="structureEditor"></div>
+                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -236,27 +251,135 @@
         const editors = {
             plot: new Quill('#plotEditor', {
                 theme: 'snow',
-                placeholder: 'Scrivi la trama principale del libro...'
+                placeholder: 'Scrivi la trama principale del libro...',
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block'],
+                        [{ 'header': 1 }, { 'header': 2 }],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'script': 'sub'}, { 'script': 'super' }],
+                        [{ 'indent': '-1'}, { 'indent': '+1' }],
+                        [{ 'direction': 'rtl' }],
+                        [{ 'size': ['small', false, 'large', 'huge'] }],
+                        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'font': [] }],
+                        [{ 'align': [] }],
+                        ['clean'],
+                        ['link', 'image', 'video']
+                    ]
+                }
             }),
             mainCharacter: new Quill('#mainCharacterEditor', {
                 theme: 'snow',
-                placeholder: 'Descrivi il personaggio principale...'
+                placeholder: 'Descrivi il personaggio principale...',
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block'],
+                        [{ 'header': 1 }, { 'header': 2 }],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'script': 'sub'}, { 'script': 'super' }],
+                        [{ 'indent': '-1'}, { 'indent': '+1' }],
+                        [{ 'direction': 'rtl' }],
+                        [{ 'size': ['small', false, 'large', 'huge'] }],
+                        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'font': [] }],
+                        [{ 'align': [] }],
+                        ['clean'],
+                        ['link', 'image', 'video']
+                    ]
+                }
             }),
             supportingCharacters: new Quill('#supportingCharactersEditor', {
                 theme: 'snow',
-                placeholder: 'Descrivi i personaggi secondari...'
+                placeholder: 'Descrivi i personaggi secondari...',
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block'],
+                        [{ 'header': 1 }, { 'header': 2 }],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'script': 'sub'}, { 'script': 'super' }],
+                        [{ 'indent': '-1'}, { 'indent': '+1' }],
+                        [{ 'direction': 'rtl' }],
+                        [{ 'size': ['small', false, 'large', 'huge'] }],
+                        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'font': [] }],
+                        [{ 'align': [] }],
+                        ['clean'],
+                        ['link', 'image', 'video']
+                    ]
+                }
             }),
             setting: new Quill('#settingEditor', {
                 theme: 'snow',
-                placeholder: 'Descrivi l\'ambientazione...'
+                placeholder: 'Descrivi l\'ambientazione...',
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block'],
+                        [{ 'header': 1 }, { 'header': 2 }],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'script': 'sub'}, { 'script': 'super' }],
+                        [{ 'indent': '-1'}, { 'indent': '+1' }],
+                        [{ 'direction': 'rtl' }],
+                        [{ 'size': ['small', false, 'large', 'huge'] }],
+                        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'font': [] }],
+                        [{ 'align': [] }],
+                        ['clean'],
+                        ['link', 'image', 'video']
+                    ]
+                }
             }),
             specialElements: new Quill('#specialElementsEditor', {
                 theme: 'snow',
-                placeholder: 'Descrivi gli elementi speciali...'
+                placeholder: 'Descrivi gli elementi speciali...',
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block'],
+                        [{ 'header': 1 }, { 'header': 2 }],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'script': 'sub'}, { 'script': 'super' }],
+                        [{ 'indent': '-1'}, { 'indent': '+1' }],
+                        [{ 'direction': 'rtl' }],
+                        [{ 'size': ['small', false, 'large', 'huge'] }],
+                        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'font': [] }],
+                        [{ 'align': [] }],
+                        ['clean'],
+                        ['link', 'image', 'video']
+                    ]
+                }
             }),
             references: new Quill('#referencesEditor', {
                 theme: 'snow',
-                placeholder: 'Inserisci i riferimenti e le ispirazioni...'
+                placeholder: 'Inserisci i riferimenti e le ispirazioni...',
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        ['blockquote', 'code-block'],
+                        [{ 'header': 1 }, { 'header': 2 }],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'script': 'sub'}, { 'script': 'super' }],
+                        [{ 'indent': '-1'}, { 'indent': '+1' }],
+                        [{ 'direction': 'rtl' }],
+                        [{ 'size': ['small', false, 'large', 'huge'] }],
+                        [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'font': [] }],
+                        [{ 'align': [] }],
+                        ['clean'],
+                        ['link', 'image', 'video']
+                    ]
+                }
             })
         };
 
@@ -362,14 +485,20 @@
             
             const bookDetails = {
                 title: document.getElementById('title').value,
-                genre: document.getElementById('genre').value,
+                genre: document.getElementById('genre').value === 'custom' 
+                    ? document.getElementById('customGenre').value 
+                    : document.getElementById('genre').value,
                 plot: editors.plot.root.innerHTML,
                 main_character: editors.mainCharacter.root.innerHTML,
                 supporting_characters: editors.supportingCharacters.root.innerHTML,
                 setting: editors.setting.root.innerHTML,
-                tone: document.getElementById('tone').value,
-                target_pages: parseInt(document.getElementById('pages').value),
-                chapter_structure: document.getElementById('structure').value,
+                tone: document.getElementById('tone').value === 'custom'
+                    ? document.getElementById('customTone').value
+                    : document.getElementById('tone').value,
+                target_pages: document.getElementById('pages').value ? parseInt(document.getElementById('pages').value) : null,
+                chapter_structure: document.getElementById('structure').value === 'custom'
+                    ? structureEditor.root.innerHTML
+                    : document.getElementById('structure').value,
                 special_elements: editors.specialElements.root.innerHTML,
                 references: editors.references.root.innerHTML
             };
@@ -464,6 +593,28 @@
             // Mostra l'analisi
             analysisDiv.style.display = 'block';
         }
+
+        // Aggiungi gestione per i campi personalizzati
+        document.getElementById('genre').addEventListener('change', function() {
+            document.getElementById('customGenreInput').style.display = 
+                this.value === 'custom' ? 'block' : 'none';
+        });
+
+        document.getElementById('tone').addEventListener('change', function() {
+            document.getElementById('customToneInput').style.display = 
+                this.value === 'custom' ? 'block' : 'none';
+        });
+
+        document.getElementById('structure').addEventListener('change', function() {
+            document.getElementById('customStructureInput').style.display = 
+                this.value === 'custom' ? 'block' : 'none';
+        });
+
+        // Inizializza l'editor per la struttura personalizzata
+        const structureEditor = new Quill('#structureEditor', {
+            theme: 'snow',
+            placeholder: 'Descrivi la struttura dei capitoli...'
+        });
     </script>
 </body>
 </html> 
