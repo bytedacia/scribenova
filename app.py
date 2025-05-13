@@ -1,5 +1,3 @@
-from flask import Flask, render_template, request, jsonify
-from flask_cors import CORS
 import os
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -7,9 +5,7 @@ import torch
 from transformers import AutoTokenizer
 from model import Transformer, ModelArgs
 import json
-
-app = Flask(__name__)
-CORS(app)
+import gradio as gr
 
 # Carica le variabili d'ambiente
 load_dotenv()
@@ -34,51 +30,22 @@ model_path = "models/deepseek-coder-33b-instruct"
 config_path = "inference/configs/config_33B.json"
 deepseek_model, tokenizer = load_deepseek_model(model_path, config_path)
 
-@app.route('/')
-def home():
-    return render_template('mobile.html')
-
-@app.route('/api/generate', methods=['POST'])
-def generate_text():
-    data = request.json
-    prompt = data.get('prompt', '')
-    style = data.get('style', 'natural')
-    content_type = data.get('content_type', 'any')
-    
+def generate_text(prompt, style, content_type):
     # Genera il testo usando entrambi i modelli
     gemini_response = gemini_model.generate_content(prompt)
     deepseek_response = generate(deepseek_model, [tokenizer.encode(prompt)], float('inf'), tokenizer.eos_token_id, 1.0)[0]
     
     # Combina le risposte
     combined_response = f"{gemini_response.text}\n\n{tokenizer.decode(deepseek_response)}"
-    
-    return jsonify({
-        'success': True,
-        'response': combined_response
-    })
+    return combined_response
 
-@app.route('/api/analyze_style', methods=['POST'])
-def analyze_style():
-    data = request.json
-    text = data.get('text', '')
-    
+def analyze_style(text):
     # Analizza lo stile usando Gemini
     prompt = f"Analizza lo stile del seguente testo e fornisci suggerimenti per migliorarlo:\n\n{text}"
     response = gemini_model.generate_content(prompt)
-    
-    return jsonify({
-        'success': True,
-        'analysis': response.text
-    })
+    return response.text
 
-@app.route('/api/generate_book', methods=['POST'])
-def generate_book():
-    data = request.json
-    title = data.get('title', '')
-    genre = data.get('genre', 'fiction')
-    style = data.get('style', 'natural')
-    content_type = data.get('content_type', 'any')
-    
+def generate_book(title, genre, style, content_type):
     # Genera il libro usando entrambi i modelli
     prompt = f"Scrivi un libro intitolato '{title}' nel genere {genre}. Stile: {style}. Tipo di contenuto: {content_type}"
     
@@ -87,11 +54,42 @@ def generate_book():
     
     # Combina le risposte
     combined_response = f"{gemini_response.text}\n\n{tokenizer.decode(deepseek_response)}"
-    
-    return jsonify({
-        'success': True,
-        'book': combined_response
-    })
+    return combined_response
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True) 
+# Creazione dell'interfaccia Gradio
+with gr.Blocks(title="ScribeNova - AI Writing Assistant") as demo:
+    gr.Markdown("# ScribeNova - AI Writing Assistant")
+    
+    with gr.Tab("Generazione Testo"):
+        with gr.Row():
+            with gr.Column():
+                prompt = gr.Textbox(label="Prompt", placeholder="Inserisci il tuo prompt qui...")
+                style = gr.Dropdown(["naturale", "formale", "creativo"], label="Stile", value="naturale")
+                content_type = gr.Dropdown(["qualsiasi", "articolo", "storia", "poesia"], label="Tipo di Contenuto", value="qualsiasi")
+                generate_btn = gr.Button("Genera")
+            with gr.Column():
+                output = gr.Textbox(label="Risultato", lines=10)
+        generate_btn.click(generate_text, inputs=[prompt, style, content_type], outputs=output)
+    
+    with gr.Tab("Analisi Stile"):
+        with gr.Row():
+            with gr.Column():
+                text_input = gr.Textbox(label="Testo da Analizzare", lines=5)
+                analyze_btn = gr.Button("Analizza")
+            with gr.Column():
+                analysis_output = gr.Textbox(label="Analisi", lines=10)
+        analyze_btn.click(analyze_style, inputs=text_input, outputs=analysis_output)
+    
+    with gr.Tab("Generazione Libro"):
+        with gr.Row():
+            with gr.Column():
+                title = gr.Textbox(label="Titolo")
+                genre = gr.Dropdown(["fiction", "non-fiction", "fantasy", "sci-fi"], label="Genere", value="fiction")
+                book_style = gr.Dropdown(["naturale", "formale", "creativo"], label="Stile", value="naturale")
+                book_content_type = gr.Dropdown(["qualsiasi", "romanzo", "racconto", "saggio"], label="Tipo di Contenuto", value="qualsiasi")
+                book_generate_btn = gr.Button("Genera Libro")
+            with gr.Column():
+                book_output = gr.Textbox(label="Libro Generato", lines=15)
+        book_generate_btn.click(generate_book, inputs=[title, genre, book_style, book_content_type], outputs=book_output)
+
+demo.launch(server_name="0.0.0.0", server_port=7860) 
