@@ -2,7 +2,7 @@
 
 by bytes(vnxflow)
 
-Sistema di generazione di libri basato su DeepSeek e Google Gemini.
+Sistema di generazione di libri basato su DeepSeek e Google Gemini avviabile solo localmente .
 
 ## Caratteristiche principali
 - Generazione completa di libri
