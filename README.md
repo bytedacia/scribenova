@@ -148,24 +148,208 @@ python inference/generate.py
 - Su CPU funziona, ma è consigliata una GPU per tempi ragionevoli.
 - Evita di fare commit dei pesi: la cartella `models/` è ignorata nel repo.
 
-## Security toolkit (anti‑tampering)
-Cartella `security/` con 4 moduli:
-- `watchdog.py`: baseline hash dei file e rilevamento modifiche
-- `verifier.py`: scansione pattern sospetti (eval/exec/subprocess...)
-- `encryptor.py`: cifratura/decifratura file sensibili (Fernet, chiave in `SECURITY_ENC_KEY`)
-- `guard.py`: orchestration; se rileva injection/modifiche, genera report e (opzionale) cifra file critici
+## 🛡️ Sistema di Sicurezza Ultra-Avanzato (24/7)
 
-Uso rapido:
-```python
-from security.watchdog import save_baseline
-from security.guard import run_guard
+### Protezione Multi-Livello
+Il sistema include **4 livelli di sicurezza** che controllano TUTTO il codice 24/7, inclusi i file di sicurezza stessi:
 
-# 1) crea baseline (una tantum dopo un commit pulito)
-save_baseline('.')
+#### 🔍 **Livello 1: Advanced Security Verifier**
+- **File**: `security/advanced_verifier.py`
+- **Funzione**: Scansione ultra-aggressiva per codice malevolo
+- **Pattern rilevati**:
+  - Esecuzione pericolosa (`eval`, `exec`, `compile`, `__import__`)
+  - Accesso sistema (`os.system`, `subprocess`, `shell=True`)
+  - Manipolazione file (`remove`, `unlink`, `rmtree`)
+  - Rete sospetta (`requests` con `verify=False`, `socket`)
+  - Serializzazione pericolosa (`pickle.loads`, `marshal`)
+  - **Auto-modifica** (`open(__file__)`, `exec(open(__file__))`)
+  - Bypass sicurezza (`# bypass`, `# hack`, `# backdoor`)
+  - Obfuscazione (`chr()`, `lambda`, `getattr`)
 
-# 2) esegui guard periodicamente o in CI
-run_guard(auto_encrypt=True)
+#### 🔒 **Livello 2: Self-Monitor (Auto-Protezione)**
+- **File**: `security/self_monitor.py`
+- **Funzione**: Auto-monitoraggio dei file di sicurezza
+- **Caratteristiche**:
+  - Monitora TUTTI i file critici inclusi quelli di sicurezza
+  - Rileva auto-modifica in tempo reale
+  - Baseline automatica con hash SHA256
+  - Allerte immediate per modifiche ai file di sicurezza
+  - Risposta di emergenza automatica
+
+#### 🚨 **Livello 3: Ultra Guard (Orchestratore)**
+- **File**: `security/ultra_guard.py`
+- **Funzione**: Coordinamento di tutti i sistemi di sicurezza
+- **Caratteristiche**:
+  - Monitoraggio continuo 24/7
+  - Risposta di emergenza automatica
+  - Criptazione automatica file critici
+  - Backup di emergenza
+  - Notifiche di sicurezza
+  - Auto-riparazione
+
+#### 🔐 **Livello 4: Encryption & Protection**
+- **File**: `security/encryptor.py`
+- **Funzione**: Criptazione file critici con Fernet
+- **Caratteristiche**:
+  - Criptazione automatica su threat
+  - Chiavi di sicurezza configurabili
+  - Decriptazione sicura
+
+### 🚀 **Avvio Sistema di Sicurezza**
+
+#### **Metodo 1: Script Interattivo**
+```bash
+# Avvia sistema completo
+python security/start_ultra_security.py
+
+# Comandi disponibili:
+#   status    - Stato sistema
+#   baseline  - Crea baseline
+#   scan      - Scansione una volta
+#   start     - Protezione continua 24/7
 ```
+
+#### **Metodo 2: Comandi Diretti**
+```bash
+# Crea baseline di sicurezza
+python security/self_monitor.py . create_baseline
+
+# Verifica integrità
+python security/self_monitor.py . check
+
+# Scansione avanzata
+python security/advanced_verifier.py .
+
+# Avvia protezione continua
+python security/ultra_guard.py . start
+```
+
+#### **Metodo 3: Scansione di Emergenza**
+```bash
+# Scansione immediata ultra-avanzata
+python security/ultra_guard.py . emergency_scan
+```
+
+### 🔄 **GitHub Actions - Protezione 24/7**
+
+Il sistema è integrato con GitHub Actions per monitoraggio continuo:
+
+- **Frequenza**: Ogni 15 minuti
+- **Trigger**: Push, PR, schedule
+- **Azioni**:
+  - Verifica integrità file
+  - Scansione avanzata codice malevolo
+  - Scansione di emergenza
+  - Upload report di sicurezza
+  - **Build fallisce** su threat critici
+
+### ⚙️ **Configurazione Avanzata**
+
+#### **Variabili d'Ambiente**
+```bash
+# Chiave di criptazione (opzionale)
+SECURITY_ENC_KEY=your_encryption_key_here
+
+# Configurazione monitoraggio
+SECURITY_SCAN_INTERVAL=60          # Secondi tra scansioni
+SECURITY_EMERGENCY_RESPONSE=true   # Risposta emergenza
+SECURITY_AUTO_ENCRYPT=true         # Criptazione automatica
+```
+
+#### **File di Configurazione**
+- `security/ultra_guard_config.json` - Configurazione sistema
+- `security/self_monitor_baseline.json` - Baseline file
+- `security/ultra_guard_status.json` - Stato sistema
+- `security/security_alerts.json` - Allerte di sicurezza
+
+### 📊 **Monitoraggio e Report**
+
+#### **File di Log**
+- `security/ultra_guard_activity.log` - Log attività
+- `security/emergency_log.json` - Log emergenze
+- `security/advanced_security_report.json` - Report scansioni
+
+#### **Statistiche Sistema**
+- Scansioni eseguite
+- Threat bloccati
+- Risposte di emergenza
+- File protetti
+- Ultima scansione
+
+### 🔧 **Sistema di Auto-Riparazione**
+
+#### **Backup Sicuro Automatico**
+- **File**: `security/backup_manager.py`
+- **Funzione**: Backup criptato di tutti i file critici
+- **Caratteristiche**:
+  - Backup automatico ogni ora
+  - Criptazione con Fernet
+  - Hash SHA256 per verifica integrità
+  - Rotazione backup (max 10 per file)
+  - Pulizia automatica backup vecchi
+
+#### **Auto-Riparazione**
+- **File**: `security/auto_repair.py`
+- **Funzione**: Rileva e ripara automaticamente file infetti
+- **Caratteristiche**:
+  - Rilevamento infezioni in tempo reale
+  - Quarantena file infetti
+  - Ripristino da backup puliti
+  - Verifica post-riparazione
+  - Riparazione di emergenza
+
+#### **Processo di Auto-Riparazione**
+1. **Rilevamento**: Scansiona file per pattern malevoli
+2. **Quarantena**: Sposta file infetti in quarantena sicura
+3. **Ripristino**: Decripta e ripristina file puliti da backup
+4. **Verifica**: Controlla integrità file riparato
+5. **Log**: Registra tutte le operazioni di riparazione
+
+### 🚨 **Risposta di Emergenza**
+
+Quando rileva threat critici, il sistema:
+
+1. **Cripta automaticamente** file critici
+2. **Crea backup** di emergenza
+3. **Avvia auto-riparazione** immediata
+4. **Quarantena** file infetti
+5. **Ripristina** file puliti da backup criptati
+6. **Verifica** integrità sistema
+7. **Invia notifiche** di sicurezza
+8. **Genera report** dettagliati
+
+### 🔧 **Manutenzione**
+
+```bash
+# Verifica stato sistema
+python security/ultra_guard.py . status
+
+# Aggiorna baseline
+python security/self_monitor.py . create_baseline
+
+# Scansione manuale
+python security/advanced_verifier.py .
+
+# Backup sicuro
+python security/backup_manager.py . backup
+
+# Auto-riparazione
+python security/auto_repair.py . scan
+
+# Riparazione di emergenza
+python security/auto_repair.py . emergency
+
+# Stato quarantena
+python security/auto_repair.py . quarantine
+```
+
+### ⚠️ **Note Importanti**
+
+- Il sistema monitora **TUTTI i file** inclusi quelli di sicurezza
+- **Auto-protezione** previene modifiche malevoli ai file di sicurezza
+- **Criptazione automatica** su threat critici
+- **Monitoraggio 24/7** con GitHub Actions
+- **Risposta immediata** a minacce
 
 ## Licenza
 MIT (codice). L’uso dei modelli segue le rispettive licenze.
