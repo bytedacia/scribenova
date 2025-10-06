@@ -116,6 +116,13 @@ powershell -ExecutionPolicy Bypass -File .\scripts\download_models.ps1
   - `FLUX_MODEL_ID`, `FLUX_LOCAL_MODEL_PATH`, `FLUX_REPO_ID`, `FLUX_REVISION`
 - Hugging Face token: `HF_TOKEN` o `HUGGINGFACE_HUB_TOKEN`
 
+### Sicurezza (consigliato)
+- `API_SECRET`: abilita autenticazione via header `X-API-KEY`
+- `CORS_ORIGINS`: lista di origin consentiti, separati da virgola
+- `MAX_CONTENT_LENGTH_MB`: limite dimensione richiesta (default 10)
+- `RATE_LIMIT` e `RATE_WINDOW_SEC`: rate limiting per IP (default 30 richieste/10 min)
+- `ALLOW_TRUST_REMOTE_CODE`: per sicurezza è disattivato; abilitalo solo se necessario
+
 ## Avvio rapido (orchestratore unico)
 ```python
 from inference.orchestrator import UnifiedScribe

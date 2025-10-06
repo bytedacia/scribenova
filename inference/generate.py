@@ -11,7 +11,7 @@ import random
 import requests
 from PIL import Image
 import io
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, abort
 from flask_cors import CORS
 import googleapiclient.discovery
 from bs4 import BeautifulSoup
@@ -34,7 +34,52 @@ from safetensors.torch import load_model
 from model import Transformer, ModelArgs
 
 app = Flask(__name__)
-CORS(app)
+
+# Security: limit request size (e.g., 10 MB)
+app.config['MAX_CONTENT_LENGTH'] = int(os.getenv('MAX_CONTENT_LENGTH_MB', '10')) * 1024 * 1024
+
+# Security: CORS allowlist via env (comma-separated origins); default none
+_cors_origins = os.getenv('CORS_ORIGINS', '')
+if _cors_origins:
+    origins = [o.strip() for o in _cors_origins.split(',') if o.strip()]
+    CORS(app, resources={r"/*": {"origins": origins}})
+else:
+    CORS(app, resources={r"/*": {"origins": []}})
+
+# Security: simple API key protection (optional)
+API_SECRET = os.getenv('API_SECRET')
+
+def require_api_key():
+    if not API_SECRET:
+        return True
+    return request.headers.get('X-API-KEY') == API_SECRET
+
+# Security: basic per-IP rate limiting (memory; best-effort)
+from collections import defaultdict, deque
+import time
+_rate_log = defaultdict(lambda: deque(maxlen=100))
+RATE_LIMIT = int(os.getenv('RATE_LIMIT', '30'))  # requests
+RATE_WINDOW_SEC = int(os.getenv('RATE_WINDOW_SEC', '600'))
+
+def check_rate_limit() -> bool:
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr or 'unknown').split(',')[0].strip()
+    now = time.time()
+    q = _rate_log[ip]
+    # prune
+    while q and now - q[0] > RATE_WINDOW_SEC:
+        q.popleft()
+    if len(q) >= RATE_LIMIT:
+        return False
+    q.append(now)
+    return True
+
+@app.after_request
+def set_security_headers(resp):
+    resp.headers['X-Content-Type-Options'] = 'nosniff'
+    resp.headers['X-Frame-Options'] = 'DENY'
+    resp.headers['Referrer-Policy'] = 'no-referrer'
+    resp.headers['Permissions-Policy'] = 'geolocation=()'
+    return resp
 
 # Carica le variabili d'ambiente
 load_dotenv()
@@ -61,12 +106,13 @@ def _load_qwen_local():
         torch.set_default_dtype(torch.bfloat16)
         if device.type == "cuda":
             torch.set_default_device("cuda")
-        _qwen_tokenizer = AutoTokenizer.from_pretrained(QWEN_LOCAL_MODEL_PATH, trust_remote_code=True)
+        allow_trust = os.getenv('ALLOW_TRUST_REMOTE_CODE', '').lower() == 'true'
+        _qwen_tokenizer = AutoTokenizer.from_pretrained(QWEN_LOCAL_MODEL_PATH, trust_remote_code=allow_trust)
         _qwen_model = AutoModelForCausalLM.from_pretrained(
             QWEN_LOCAL_MODEL_PATH,
             torch_dtype=torch.bfloat16 if device.type == "cuda" else torch.float32,
             device_map="auto" if device.type == "cuda" else None,
-            trust_remote_code=True,
+            trust_remote_code=allow_trust,
         )
         if device.type != "cuda":
             _qwen_model = _qwen_model.to(device)
@@ -171,12 +217,13 @@ def _load_llama_local():
         torch.set_default_dtype(torch.bfloat16)
         if device.type == "cuda":
             torch.set_default_device("cuda")
-        _llama_tokenizer = AutoTokenizer.from_pretrained(LLAMA_LOCAL_MODEL_PATH, trust_remote_code=True)
+        allow_trust = os.getenv('ALLOW_TRUST_REMOTE_CODE', '').lower() == 'true'
+        _llama_tokenizer = AutoTokenizer.from_pretrained(LLAMA_LOCAL_MODEL_PATH, trust_remote_code=allow_trust)
         _llama_model = AutoModelForCausalLM.from_pretrained(
             LLAMA_LOCAL_MODEL_PATH,
             torch_dtype=torch.bfloat16 if device.type == "cuda" else torch.float32,
             device_map="auto" if device.type == "cuda" else None,
-            trust_remote_code=True,
+            trust_remote_code=allow_trust,
         )
         if device.type != "cuda":
             _llama_model = _llama_model.to(device)
@@ -229,12 +276,13 @@ def _load_gemma_local():
         torch.set_default_dtype(torch.bfloat16)
         if device.type == "cuda":
             torch.set_default_device("cuda")
-        _gemma_tokenizer = AutoTokenizer.from_pretrained(GEMMA_LOCAL_MODEL_PATH, trust_remote_code=True)
+        allow_trust = os.getenv('ALLOW_TRUST_REMOTE_CODE', '').lower() == 'true'
+        _gemma_tokenizer = AutoTokenizer.from_pretrained(GEMMA_LOCAL_MODEL_PATH, trust_remote_code=allow_trust)
         _gemma_model = AutoModelForCausalLM.from_pretrained(
             GEMMA_LOCAL_MODEL_PATH,
             torch_dtype=torch.bfloat16 if device.type == "cuda" else torch.float32,
             device_map="auto" if device.type == "cuda" else None,
-            trust_remote_code=True,
+            trust_remote_code=allow_trust,
         )
         if device.type != "cuda":
             _gemma_model = _gemma_model.to(device)
@@ -317,9 +365,16 @@ def search_publishers(query: str, num: int = 5) -> list:
 def extract_emails_from_url(url: str) -> list:
     emails = set()
     try:
-        r = requests.get(url, timeout=20)
+        # Only allow http/https and limit response size
+        if not (url.startswith('http://') or url.startswith('https://')):
+            return []
+        r = requests.get(url, timeout=20, headers={'User-Agent': 'ScribeNovaBot/1.0'})
         if r.status_code == 200:
-            soup = BeautifulSoup(r.text, 'html.parser')
+            text = r.text
+            # Limit to first 1.5MB to avoid excessive memory
+            if len(text) > 1_500_000:
+                text = text[:1_500_000]
+            soup = BeautifulSoup(text, 'html.parser')
             text = soup.get_text(" ")
             emails.update(re.findall(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}", text))
     except Exception:
@@ -1012,8 +1067,15 @@ def home():
 
 @app.route('/api/generate', methods=['POST'])
 def api_generate():
+    if not require_api_key() or not check_rate_limit():
+        return abort(429)
     data = request.json
     book_details = data.get('book_details', {})
+    # Input validation: clamp lengths
+    for k in list(book_details.keys()):
+        v = book_details.get(k)
+        if isinstance(v, str) and len(v) > 50000:
+            book_details[k] = v[:50000]
     
     # Genera la struttura del libro
     book_structure = generate_long_book(book_details)
@@ -1098,6 +1160,8 @@ def api_generate():
 
 @app.route('/api/analyze', methods=['POST'])
 def api_analyze():
+    if not require_api_key() or not check_rate_limit():
+        return abort(429)
     data = request.json
     file_path = data.get('file_path')
     
@@ -1249,6 +1313,8 @@ def write_style_guided_chapter(chapter_outline: Dict, style_guide: Dict) -> str:
 
 @app.route('/api/analyze_style', methods=['POST'])
 def api_analyze_style():
+    if not require_api_key() or not check_rate_limit():
+        return abort(429)
     data = request.json
     style_type = data.get('style_type')  # 'author' o 'book'
     name = data.get('name')
