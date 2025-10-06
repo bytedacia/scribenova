@@ -148,6 +148,25 @@ python inference/generate.py
 - Su CPU funziona, ma è consigliata una GPU per tempi ragionevoli.
 - Evita di fare commit dei pesi: la cartella `models/` è ignorata nel repo.
 
+## Security toolkit (anti‑tampering)
+Cartella `security/` con 4 moduli:
+- `watchdog.py`: baseline hash dei file e rilevamento modifiche
+- `verifier.py`: scansione pattern sospetti (eval/exec/subprocess...)
+- `encryptor.py`: cifratura/decifratura file sensibili (Fernet, chiave in `SECURITY_ENC_KEY`)
+- `guard.py`: orchestration; se rileva injection/modifiche, genera report e (opzionale) cifra file critici
+
+Uso rapido:
+```python
+from security.watchdog import save_baseline
+from security.guard import run_guard
+
+# 1) crea baseline (una tantum dopo un commit pulito)
+save_baseline('.')
+
+# 2) esegui guard periodicamente o in CI
+run_guard(auto_encrypt=True)
+```
+
 ## Licenza
 MIT (codice). L’uso dei modelli segue le rispettive licenze.
 
