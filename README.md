@@ -25,6 +25,64 @@ Tutti i pesi sono scaricati da Hugging Face al primo avvio o via script.
 - GPU NVIDIA consigliata (CUDA) per performance e qualità
 - Dipendenze principali: `torch`, `transformers`, `diffusers`, `accelerate`, `huggingface_hub`, `flask`, `python-docx`, `beautifulsoup4`, `requests`, `python-dotenv`
 
+### Requisiti hardware (per esecuzione locale)
+
+GPU supportate
+
+- NVIDIA RTX 50 Series
+  - RTX 5090 (Prestazioni ottimali)
+  - RTX 5080
+  - RTX 5070
+- NVIDIA RTX 40 Series
+  - RTX 4090
+  - RTX 4080 Super
+  - RTX 4080
+  - RTX 4070 Ti Super
+  - RTX 4070 Ti
+  - RTX 4070 Super
+  - RTX 4070
+- NVIDIA RTX 30 Series
+  - RTX 3090 Ti
+  - RTX 3090
+  - RTX 3080 Ti
+  - RTX 3080
+  - RTX 3070 Ti
+  - RTX 3070
+- AMD e Apple Silicon
+  - AMD RX 7900 XTX
+  - AMD RX 7900 XT
+  - Apple M3 Max / M3 Pro
+  - Apple M2 Ultra
+
+GPU con supporto limitato
+
+- RTX 4060 Ti (supportata ma con prestazioni ridotte)
+- RTX 3060 Ti (supportata ma con prestazioni ridotte)
+
+GPU non supportate
+
+- NVIDIA serie x50/x60: RTX 5060, RTX 5050, RTX 4060, RTX 4050, RTX 3060, RTX 3050
+- Serie RTX 20 e precedenti (RTX 2080 Ti e inferiori)
+- Tutte le GPU GTX e GPU integrate Intel
+
+CPU consigliate
+
+- Intel 12th Gen e successive (consigliata)
+  - i9-13900K/KF, i9-12900K/KF, i7-13700K/KF, i7-12700K/KF
+- Intel 11th Gen (minimo)
+  - i9-11900K, i7-11700K
+- AMD Ryzen 7000 (consigliata)
+  - 7950X, 7900X, 7800X3D, 7700X
+- AMD Ryzen 5000 (minimo)
+  - 5950X, 5900X, 5800X3D, 5800X
+- Apple Silicon
+  - Serie M3 (consigliata): M3 Max/Pro/M3
+  - Serie M2 (supportata): M2 Ultra/Max/Pro/M2
+
+Memoria
+
+- DDR5: minimo DDR5-5200, consigliato DDR5-6000+
+
 ## Installazione
 ```bash
 git clone https://github.com/bytedacia/scribenova.git
