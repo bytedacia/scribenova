@@ -23,7 +23,12 @@ from googleapiclient.errors import HttpError
 
 import torch
 import torch.distributed as dist
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 from safetensors.torch import load_model
 
 from model import Transformer, ModelArgs
@@ -34,12 +39,398 @@ CORS(app)
 # Carica le variabili d'ambiente
 load_dotenv()
 
-# Configurazione API Google
-GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY', 'AIzaSyCWkP0oZmmS2LP79tH3VHMGKy7XypGb_f4')
+# Configurazione API Google (no default hardcoded)
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+if GOOGLE_API_KEY:
 genai.configure(api_key=GOOGLE_API_KEY)
 
 # Configurazione del modello Gemini
-model = genai.GenerativeModel('gemini-pro')
+model = genai.GenerativeModel('gemini-pro') if GOOGLE_API_KEY else None
+
+# Qwen3 local model (Transformers) lazy loading
+QWEN_LOCAL_MODEL_PATH = os.getenv('QWEN_LOCAL_MODEL_PATH', 'models/Qwen3-8B')
+_qwen_model = None
+_qwen_tokenizer = None
+
+def _load_qwen_local():
+    global _qwen_model, _qwen_tokenizer
+    if _qwen_model is not None and _qwen_tokenizer is not None:
+        return _qwen_model, _qwen_tokenizer
+    try:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        torch.set_default_dtype(torch.bfloat16)
+        if device.type == "cuda":
+            torch.set_default_device("cuda")
+        _qwen_tokenizer = AutoTokenizer.from_pretrained(QWEN_LOCAL_MODEL_PATH, trust_remote_code=True)
+        _qwen_model = AutoModelForCausalLM.from_pretrained(
+            QWEN_LOCAL_MODEL_PATH,
+            torch_dtype=torch.bfloat16 if device.type == "cuda" else torch.float32,
+            device_map="auto" if device.type == "cuda" else None,
+            trust_remote_code=True,
+        )
+        if device.type != "cuda":
+            _qwen_model = _qwen_model.to(device)
+    except Exception:
+        _qwen_model, _qwen_tokenizer = None, None
+    return _qwen_model, _qwen_tokenizer
+
+def qwen_humanize_and_proof(text: str, temperature: float = 0.6, max_new_tokens: int = 1024) -> str:
+    model, tokenizer = _load_qwen_local()
+    if model is None or tokenizer is None:
+        return text
+    system = (
+        "Sei un editor professionista italiano. Riscrivi il testo rendendolo più umano, naturale, "
+        "fluido e coerente. Migliora ritmo e voce, elimina ripetizioni, correggi errori grammaticali/ortografici, "
+        "mantieni il significato e lo stile scelto dall'autore. Restituisci solo il testo revisionato."
+    )
+    user = (
+        "Testo da umanizzare e correggere (mantieni lingua e contenuti, migliora qualità editoriale):\n\n" + text
+    )
+    try:
+        # Prefer chat template if available
+        if hasattr(tokenizer, "apply_chat_template"):
+            messages = [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ]
+            input_ids = tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt")
+        else:
+            prompt = f"[SYSTEM]\n{system}\n[/SYSTEM]\n[USER]\n{user}\n[/USER]\n[ASSISTANT]"
+            input_ids = tokenizer(prompt, return_tensors="pt").input_ids
+
+        device = next(model.parameters()).device
+        input_ids = input_ids.to(device)
+        with torch.inference_mode():
+            output_ids = model.generate(
+                input_ids=input_ids,
+                max_new_tokens=max_new_tokens,
+                do_sample=True,
+                temperature=max(temperature, 1e-5),
+                eos_token_id=tokenizer.eos_token_id,
+                pad_token_id=tokenizer.eos_token_id,
+            )
+        gen_ids = output_ids[:, input_ids.shape[-1]:]
+        out = tokenizer.decode(gen_ids[0], skip_special_tokens=True)
+        return out.strip() or text
+    except Exception:
+        return text
+
+# DeepSeek-V3 local loader and primary text generation (libro)
+DEEPSEEK_LOCAL_PATH = os.getenv('DEEPSEEK_LOCAL_PATH', os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 'DeepSeek-V3'))
+DEEPSEEK_CONFIG_PATH = os.getenv('DEEPSEEK_CONFIG_PATH', os.path.join(os.path.dirname(__file__), 'configs', 'config_7B.json'))
+_deepseek_model = None
+_deepseek_tokenizer = None
+
+def _load_deepseek_local():
+    global _deepseek_model, _deepseek_tokenizer
+    if _deepseek_model is not None and _deepseek_tokenizer is not None:
+        return _deepseek_model, _deepseek_tokenizer
+    try:
+        with open(DEEPSEEK_CONFIG_PATH, 'r', encoding='utf-8') as f:
+            args = ModelArgs(**json.load(f))
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        torch.set_default_dtype(torch.bfloat16)
+        if device.type == 'cuda':
+            torch.set_default_device('cuda')
+        _deepseek_model = Transformer(args)
+        if device.type == 'cuda':
+            _deepseek_model = _deepseek_model.to('cuda')
+        _deepseek_tokenizer = AutoTokenizer.from_pretrained(DEEPSEEK_LOCAL_PATH)
+    except Exception:
+        _deepseek_model, _deepseek_tokenizer = None, None
+    return _deepseek_model, _deepseek_tokenizer
+
+def deepseek_generate_text(prompt: str, temperature: float = 0.9, max_new_tokens: int = 2048) -> str:
+    model, tokenizer = _load_deepseek_local()
+    if model is None or tokenizer is None:
+        return ""
+    try:
+        input_ids = tokenizer.encode(prompt)
+        out_ids = generate(
+            model,
+            [input_ids],
+            int(max_new_tokens),
+            tokenizer.eos_token_id if getattr(tokenizer, 'eos_token_id', None) is not None else -1,
+            float(temperature),
+        )[0]
+        return tokenizer.decode(out_ids)
+    except Exception:
+        return ""
+
+# Llama 3 local model (Transformers) lazy loading for title/plot
+LLAMA_LOCAL_MODEL_PATH = os.getenv('LLAMA_LOCAL_MODEL_PATH', 'models/Llama3-8B-Instruct')
+_llama_model = None
+_llama_tokenizer = None
+
+def _load_llama_local():
+    global _llama_model, _llama_tokenizer
+    if _llama_model is not None and _llama_tokenizer is not None:
+        return _llama_model, _llama_tokenizer
+    try:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        torch.set_default_dtype(torch.bfloat16)
+        if device.type == "cuda":
+            torch.set_default_device("cuda")
+        _llama_tokenizer = AutoTokenizer.from_pretrained(LLAMA_LOCAL_MODEL_PATH, trust_remote_code=True)
+        _llama_model = AutoModelForCausalLM.from_pretrained(
+            LLAMA_LOCAL_MODEL_PATH,
+            torch_dtype=torch.bfloat16 if device.type == "cuda" else torch.float32,
+            device_map="auto" if device.type == "cuda" else None,
+            trust_remote_code=True,
+        )
+        if device.type != "cuda":
+            _llama_model = _llama_model.to(device)
+    except Exception:
+        _llama_model, _llama_tokenizer = None, None
+    return _llama_model, _llama_tokenizer
+
+def llama_generate_text(prompt: str, temperature: float = 0.4, max_new_tokens: int = 256) -> str:
+    model, tokenizer = _load_llama_local()
+    if model is None or tokenizer is None:
+        return ""
+    try:
+        # Use chat template if available for Instruct models
+        if hasattr(tokenizer, "apply_chat_template"):
+            messages = [
+                {"role": "system", "content": "Sei un assistente di scrittura italiano sintetico e preciso."},
+                {"role": "user", "content": prompt},
+            ]
+            input_ids = tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt")
+        else:
+            input_ids = tokenizer(prompt, return_tensors="pt").input_ids
+        device = next(model.parameters()).device
+        input_ids = input_ids.to(device)
+        with torch.inference_mode():
+            output_ids = model.generate(
+                input_ids=input_ids,
+                max_new_tokens=max_new_tokens,
+                do_sample=True,
+                temperature=max(temperature, 1e-5),
+                eos_token_id=tokenizer.eos_token_id,
+                pad_token_id=tokenizer.eos_token_id,
+            )
+        gen_ids = output_ids[:, input_ids.shape[-1]:]
+        out = tokenizer.decode(gen_ids[0], skip_special_tokens=True)
+        return out.strip()
+    except Exception:
+        return ""
+
+# Gemma local model (Transformers) lazy loading for SEO
+GEMMA_LOCAL_MODEL_PATH = os.getenv('GEMMA_LOCAL_MODEL_PATH', 'models/Gemma-7B')
+_gemma_model = None
+_gemma_tokenizer = None
+
+def _load_gemma_local():
+    global _gemma_model, _gemma_tokenizer
+    if _gemma_model is not None and _gemma_tokenizer is not None:
+        return _gemma_model, _gemma_tokenizer
+    try:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        torch.set_default_dtype(torch.bfloat16)
+        if device.type == "cuda":
+            torch.set_default_device("cuda")
+        _gemma_tokenizer = AutoTokenizer.from_pretrained(GEMMA_LOCAL_MODEL_PATH, trust_remote_code=True)
+        _gemma_model = AutoModelForCausalLM.from_pretrained(
+            GEMMA_LOCAL_MODEL_PATH,
+            torch_dtype=torch.bfloat16 if device.type == "cuda" else torch.float32,
+            device_map="auto" if device.type == "cuda" else None,
+            trust_remote_code=True,
+        )
+        if device.type != "cuda":
+            _gemma_model = _gemma_model.to(device)
+    except Exception:
+        _gemma_model, _gemma_tokenizer = None, None
+    return _gemma_model, _gemma_tokenizer
+
+def gemma_generate_json(prompt: str, temperature: float = 0.3, max_new_tokens: int = 512) -> dict:
+    model, tokenizer = _load_gemma_local()
+    if model is None or tokenizer is None:
+        return {}
+    try:
+        if hasattr(tokenizer, "apply_chat_template"):
+            messages = [
+                {"role": "system", "content": "Sei un esperto SEO italiano. Rispondi SOLO in JSON valido."},
+                {"role": "user", "content": prompt},
+            ]
+            input_ids = tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt")
+        else:
+            input_ids = tokenizer(prompt, return_tensors="pt").input_ids
+        device = next(model.parameters()).device
+        input_ids = input_ids.to(device)
+        with torch.inference_mode():
+            output_ids = model.generate(
+                input_ids=input_ids,
+                max_new_tokens=max_new_tokens,
+                do_sample=True,
+                temperature=max(temperature, 1e-5),
+                eos_token_id=tokenizer.eos_token_id,
+                pad_token_id=tokenizer.eos_token_id,
+            )
+        gen_ids = output_ids[:, input_ids.shape[-1]:]
+        out = tokenizer.decode(gen_ids[0], skip_special_tokens=True).strip()
+        return json.loads(out)
+    except Exception:
+        return {}
+
+def analyze_seo_with_gemma(book_text: str) -> dict:
+    prompt = (
+        "Analizza il seguente libro e genera JSON con: "
+        "{\"keywords\": [parole chiave SEO], \"tags\": [tag Wattpad], "
+        "\"description\": \"meta descrizione 140-160 char\", \"categories\": [categorie]\n}.\n\n" + book_text
+    )
+    data = gemma_generate_json(prompt, temperature=0.25, max_new_tokens=512)
+    return {
+        "keywords": data.get("keywords", []),
+        "tags": data.get("tags", []),
+        "description": data.get("description", ""),
+        "categories": data.get("categories", []),
+    }
+
+# Google CSE search for publishers and contact extraction
+GOOGLE_CSE_API_KEY = os.getenv('GOOGLE_CSE_API_KEY')
+GOOGLE_CSE_CX = os.getenv('GOOGLE_CSE_CX')
+
+def search_publishers(query: str, num: int = 5) -> list:
+    if not GOOGLE_CSE_API_KEY or not GOOGLE_CSE_CX:
+        return []
+    results = []
+    try:
+        params = {
+            'key': GOOGLE_CSE_API_KEY,
+            'cx': GOOGLE_CSE_CX,
+            'q': query,
+            'num': min(num, 10),
+        }
+        resp = requests.get('https://www.googleapis.com/customsearch/v1', params=params, timeout=20)
+        if resp.status_code == 200:
+            data = resp.json()
+            for item in data.get('items', []):
+                results.append({
+                    'title': item.get('title'),
+                    'link': item.get('link'),
+                    'snippet': item.get('snippet'),
+                })
+    except Exception:
+        pass
+    return results
+
+def extract_emails_from_url(url: str) -> list:
+    emails = set()
+    try:
+        r = requests.get(url, timeout=20)
+        if r.status_code == 200:
+            soup = BeautifulSoup(r.text, 'html.parser')
+            text = soup.get_text(" ")
+            emails.update(re.findall(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}", text))
+    except Exception:
+        pass
+    return list(emails)
+
+# Email sending
+SMTP_HOST = os.getenv('SMTP_HOST')
+SMTP_PORT = int(os.getenv('SMTP_PORT', '587'))
+SMTP_USER = os.getenv('SMTP_USER')
+SMTP_PASS = os.getenv('SMTP_PASS')
+SMTP_FROM = os.getenv('SMTP_FROM', SMTP_USER or '')
+
+def send_email(to_addr: str, subject: str, body: str, attachments: list = None) -> bool:
+    if not (SMTP_HOST and SMTP_USER and SMTP_PASS and SMTP_FROM):
+        return False
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = SMTP_FROM
+        msg['To'] = to_addr
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'plain', 'utf-8'))
+        for attachment_path in (attachments or []):
+            try:
+                with open(attachment_path, 'rb') as f:
+                    part = MIMEBase('application', 'octet-stream')
+                    part.set_payload(f.read())
+                encoders.encode_base64(part)
+                filename = os.path.basename(attachment_path)
+                part.add_header('Content-Disposition', f'attachment; filename="{filename}"')
+                msg.attach(part)
+            except Exception:
+                continue
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20) as server:
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASS)
+            server.sendmail(SMTP_FROM, [to_addr], msg.as_string())
+        return True
+    except Exception:
+        return False
+
+def build_professional_pitch(book_title: str, plot: str, seo: dict, publisher_name: str = None) -> str:
+    tagline = seo.get('description', '')
+    keywords = ', '.join(seo.get('keywords', [])[:6])
+    intro_target = f"Gentile Redazione{', ' + publisher_name if publisher_name else ''},"
+    body = (
+        f"{intro_target}\n\n"
+        f"mi chiamo {os.getenv('AUTHOR_NAME','')}. Vorrei sottoporvi il mio manoscritto intitolato \"{book_title}\".\n\n"
+        f"Sinossi:\n{plot}\n\n"
+        f"Tagline/Meta descrizione: {tagline}\n"
+        f"Parole chiave: {keywords}\n\n"
+        f"Il manoscritto è completo e disponibile in allegato (docx) e in versione testo per anteprima. "
+        f"Resto a disposizione per ulteriori materiali (capitoli campione, biografia, sinossi estesa).\n\n"
+        f"Cordiali saluti,\n{os.getenv('AUTHOR_NAME','')}\n{os.getenv('AUTHOR_EMAIL','')}"
+    )
+    return body
+
+def outreach_publishers(book_title: str, pitch: str, queries: list, attachments: list = None) -> dict:
+    sent = []
+    found = []
+    for q in queries:
+        for item in search_publishers(q, num=5):
+            found.append(item)
+            for email in extract_emails_from_url(item['link']):
+                if send_email(email, f"Proposta di pubblicazione: {book_title}", pitch, attachments=attachments):
+                    sent.append(email)
+    return {"found": found, "sent": sent}
+
+def wattpad_export(book_structure: Dict) -> str:
+    os.makedirs("wattpad_exports", exist_ok=True)
+    title = book_structure.get('title', f"book_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+    safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_')).rstrip()
+    path = os.path.join("wattpad_exports", f"{safe_title}.txt")
+    parts = [f"{book_structure.get('title','')}\n\n{book_structure.get('plot','')}\n\n"]
+    for ch in book_structure.get('chapters', []):
+        parts.append(f"# {ch.get('title','')}\n\n{ch.get('content','')}\n\n")
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write("\n".join(parts))
+    return path
+
+# Flux cover generation (text-to-image)
+FLUX_MODEL_ID = os.getenv('FLUX_MODEL_ID', 'black-forest-labs/FLUX.1-schnell')
+
+def generate_cover_with_flux(title: str, refined_book_text: str, genre: str = None) -> str:
+    try:
+        from diffusers import FluxPipeline
+        import torch
+        prompt = (
+            f"Copertina di libro professionale per il titolo: '{title}'. "
+            f"Stile coerente con il contenuto: {genre or ''}. "
+            f"Tema, atmosfera e simboli chiave tratti dal libro: usa elementi evocativi, tipografia leggibile, layout editoriale."
+        )
+        pipe = FluxPipeline.from_pretrained(FLUX_MODEL_ID, torch_dtype=torch.bfloat16 if torch.cuda.is_available() else torch.float32)
+        if torch.cuda.is_available():
+            pipe = pipe.to('cuda')
+        image = pipe(prompt=prompt, num_inference_steps=28, guidance_scale=3.5).images[0]
+    except Exception:
+        try:
+            from diffusers import StableDiffusionPipeline
+            pipe = StableDiffusionPipeline.from_pretrained('stabilityai/sd-turbo')
+            if torch.cuda.is_available():
+                pipe = pipe.to('cuda')
+            image = pipe(prompt=f"Book cover, professional layout, title '{title}', {genre or ''}").images[0]
+        except Exception:
+            return None
+
+    os.makedirs('book_covers', exist_ok=True)
+    safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_')).rstrip()
+    image_path = os.path.join('book_covers', f"cover_{safe_title}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
+    image.save(image_path)
+    return image_path
 
 def sample(logits, temperature: float = 1.0):
     """
@@ -586,46 +977,25 @@ def generate_long_book(book_details: Dict) -> Dict:
 
 def write_natural_chapter(chapter_outline: Dict, style_guide: Dict) -> str:
     """
-    Scrive un capitolo in stile naturale, senza censure o limitazioni.
+    Scrive un capitolo usando DeepSeek-V3 come generatore principale (contenuto lungo),
+    poi affida il refining a Qwen3.
     """
-    content = []
-    
-    # Aggiunge un'introduzione al capitolo
-    content.append(f"# {chapter_outline['title']}\n\n")
-    
-    # Genera i sottocapitoli
+    parts = [f"# {chapter_outline['title']}\n\n"]
     for subchapter in chapter_outline["subchapters"]:
-        content.append(f"## {subchapter['title']}\n\n")
-        
-        # Genera il contenuto del sottocapitolo senza censure
-        paragraphs = []
-        num_paragraphs = random.randint(8, 12)  # 8-12 paragrafi per sottocapitolo
-        
-        for _ in range(num_paragraphs):
-            # Varia la lunghezza dei paragrafi
-            paragraph_length = random.randint(3, 7)  # 3-7 frasi per paragrafo
-            paragraph = []
-            
-            for _ in range(paragraph_length):
-                # Aggiunge variazioni naturali nella scrittura
-                if random.random() < 0.1:  # 10% di probabilità
-                    paragraph.append(random.choice([
-                        "Mi chiedo se...",
-                        "A volte penso che...",
-                        "Non so perché, ma...",
-                        "Curiosamente..."
-                    ]))
-                
-                # Genera una frase senza censure
-                sentence = write_natural_sentence(style_guide)
-                paragraph.append(sentence)
-            
-            paragraphs.append(" ".join(paragraph))
-        
-        content.append("\n\n".join(paragraphs))
-        content.append("\n\n")
-    
-    return "\n".join(content)
+        parts.append(f"## {subchapter['title']}\n\n")
+        prompt = (
+            f"Scrivi un sottocapitolo completo in italiano per '{subchapter['title']}', "
+            f"coerente con il capitolo '{chapter_outline['title']}'. "
+            f"Tono narrativo naturale, ricco di dettagli, senza limiti di lunghezza."
+        )
+        # Generazione principale DeepSeek (alto limite di token per evitare tagli)
+        sub_text = deepseek_generate_text(prompt, temperature=0.9, max_new_tokens=int(os.getenv('DEEPSEEK_MAX_NEW_TOKENS', '4096')))
+        if not sub_text:
+            sub_text = write_natural_sentence(style_guide)
+        parts.append(sub_text)
+        parts.append("\n\n")
+    # Refining con Qwen3
+    return qwen_humanize_and_proof("".join(parts))
 
 
 def write_natural_sentence(style_guide: Dict) -> str:
@@ -645,20 +1015,84 @@ def api_generate():
     data = request.json
     book_details = data.get('book_details', {})
     
-    # Genera il libro senza censure o limitazioni
+    # Genera la struttura del libro
     book_structure = generate_long_book(book_details)
     
-    # Genera i capitoli
+    # Genera e umanizza i capitoli (Qwen3 post-process per capitolo)
     for chapter in book_structure['chapters']:
-        chapter_content = write_natural_chapter(chapter, book_analysis)
-        chapter['content'] = chapter_content
-    
-    # Salva il libro
+        # placeholder style_guide; si può collegare a /api/analyze_style se fornito
+        style_guide = {"vocabulary": [], "sentence_structure": [], "themes": [], "techniques": []}
+        chapter_content = write_natural_chapter(chapter, style_guide)
+        # ulteriore passaggio breve di correzione
+        chapter['content'] = qwen_humanize_and_proof(chapter_content)
+
+    # Passaggio finale sull'intero libro
+    full_text = []
+    for chapter in book_structure['chapters']:
+        full_text.append(f"# {chapter['title']}\n\n{chapter['content']}")
+    refined_book = qwen_humanize_and_proof("\n\n".join(full_text))
+
+    # Sostituisce i contenuti con la versione raffinata a livello libro, splittando per capitoli se possibile
+    # (best-effort: manteniamo contenuti capitoli se split non affidabile)
+    if refined_book and len(refined_book) > 0:
+        # salva versione completa in prima sezione
+        if book_structure['chapters']:
+            book_structure['chapters'][0]['content'] = refined_book
+
+    # Genera titolo e trama con Llama3 sul testo raffinato, poi umanizza con Qwen
+    llama_title_prompt = (
+        "Leggi il seguente libro completo e proponi un titolo potente e sintetico (max 12 parole), "
+        "in italiano, coerente con genere e tono. Restituisci solo il titolo.\n\n" + refined_book
+    )
+    llama_plot_prompt = (
+        "Leggi il seguente libro completo e genera una sinossi/trama avvincente tra 120 e 200 parole, "
+        "in italiano, senza spoiler e con focus su conflitto e temi.\n\n" + refined_book
+    )
+    raw_title = llama_generate_text(llama_title_prompt, temperature=0.5, max_new_tokens=64)
+    raw_plot = llama_generate_text(llama_plot_prompt, temperature=0.5, max_new_tokens=220)
+    human_title = qwen_humanize_and_proof(raw_title, temperature=0.6, max_new_tokens=128).strip()
+    human_plot = qwen_humanize_and_proof(raw_plot, temperature=0.6, max_new_tokens=512).strip()
+
+    if human_title:
+        book_structure['title'] = human_title
+    if human_plot:
+        book_structure['plot'] = human_plot
+
+    # SEO con Gemma
+    seo = analyze_seo_with_gemma(refined_book)
+    book_structure['seo'] = seo
+
+    # Outreach editori (via Google CSE)
+    pitch = build_professional_pitch(
+        book_structure.get('title',''),
+        book_structure.get('plot',''),
+        seo,
+    )
+    outreach = outreach_publishers(book_structure.get('title',''), pitch, [
+        "casa editrice narrativa contatti email",
+        "editori italiani invio manoscritti",
+        "publishers fiction submissions email",
+    ], attachments=[file_path, wattpad_path])
+    book_structure['outreach'] = outreach
+
+    # Export Wattpad (offline file pronto per upload manuale)
+    wattpad_path = wattpad_export(book_structure)
+    book_structure['wattpad_path'] = wattpad_path
+
+    # Salva il libro (Word)
     file_path = save_as_word(book_structure, book_structure['title'])
+
+    # Genera copertina con Flux usando il titolo (da Llama) e contesto libro
+    cover_path = generate_cover_with_flux(book_structure.get('title',''), refined_book, book_structure.get('genre',''))
+    book_structure['cover_path'] = cover_path
     
     return jsonify({
         'success': True,
         'file_path': file_path,
+        'wattpad_path': wattpad_path,
+        'cover_path': cover_path,
+        'seo': seo,
+        'outreach': outreach,
         'book_structure': book_structure
     })
 
