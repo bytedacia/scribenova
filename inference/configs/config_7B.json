@@ -1,5 +1,5 @@
 {
-    "model_name": "Fractal Nova-7B",
+    "model_name": "FractalNova-7B",
     "vocab_size": 1000000,
     "dim": 4096,
     "inter_dim": 10944,

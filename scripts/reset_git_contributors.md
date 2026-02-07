@@ -16,7 +16,7 @@ git checkout --orphan solo-main
 
 # Aggiungi tutti i file
 git add -A
-git commit -m "Initial commit - Fractal Nova"
+git commit -m "Initial commit - FractalNova"
 
 # Collega il nuovo repo e push (sostituisci con il tuo repo)
 git remote add origin https://github.com/TUO_USER/scribenova.git

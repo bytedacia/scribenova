@@ -51,8 +51,8 @@ def _load_deepseek_model(model_path: str, config_path: str):
         _deepseek_model, _tokenizer = None, None
     return _deepseek_model, _tokenizer
 
-# Branding e percorsi Fractal Nova
-PROJECT_NAME = "Fractal Nova"
+# Branding e percorsi FractalNova
+PROJECT_NAME = "FractalNova"
 APP_TITLE = f"{PROJECT_NAME} - Generazione libri con IA"
 DEFAULT_MODEL_PATH = os.getenv("DEEPSEEK_MODEL_PATH", os.getenv("DEESEEK_MODEL_PATH", "models/deepseek-coder-7b"))
 DEFAULT_CONFIG_PATH = os.getenv("DEEPSEEK_CONFIG_PATH", os.getenv("DEESEEK_CONFIG_PATH", "inference/configs/config_7B.json"))
@@ -163,7 +163,7 @@ with gr.Blocks(title=APP_TITLE, head=_head) as demo:
             outputs=book_output,
         )
 
-# Porta e host configurabili (Fractal Nova)
+# Porta e host configurabili (FractalNova)
 SERVER_PORT = int(os.getenv("FRACTALNOVA_PORT", "7860"))
 SERVER_NAME = os.getenv("FRACTALNOVA_HOST", "0.0.0.0")
 demo.launch(server_name=SERVER_NAME, server_port=SERVER_PORT) 

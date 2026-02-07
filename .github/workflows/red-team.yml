@@ -1,4 +1,4 @@
-# Fractal Nova - Red Team Testing (schedulato + manuale)
+# FractalNova - Red Team Testing (schedulato + manuale)
 # Esegue payload controllati e verifica detection. Solo in ambiente CI isolato.
 
 name: Red Team - Detection Validation

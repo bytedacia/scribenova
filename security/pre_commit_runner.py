@@ -196,7 +196,7 @@ def run_pre_commit(
 
 def main():
     import argparse
-    p = argparse.ArgumentParser(description="Fractal Nova pre-commit security runner")
+    p = argparse.ArgumentParser(description="FractalNova pre-commit security runner")
     p.add_argument("--root", default=PROJECT_ROOT, help="Project root")
     p.add_argument("--skip-sast", action="store_true", help="Skip Bandit SAST")
     p.add_argument("--skip-deps", action="store_true", help="Skip dependency check")
@@ -214,7 +214,7 @@ def main():
     if args.json:
         print(json.dumps(report, indent=2, ensure_ascii=False))
     else:
-        print("Fractal Nova - Pre-commit security scan")
+        print("FractalNova - Pre-commit security scan")
         print("Root:", report["root"])
         for name, c in report["checks"].items():
             status = "OK" if c.get("ok") else "FAIL"

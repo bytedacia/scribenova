@@ -1,4 +1,4 @@
-# Runbook — Sicurezza Fractal Nova
+# Runbook — Sicurezza FractalNova
 
 Operazioni ricorrenti e risposta agli incidenti. Per il piano completo vedi [SECURITY_PIPELINE.md](SECURITY_PIPELINE.md).
 

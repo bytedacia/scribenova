@@ -1,12 +1,12 @@
 #!/bin/bash
-# Fractal Nova - Pre-push hook: scansione completa repo (non solo staged)
+# FractalNova - Pre-push hook: scansione completa repo (non solo staged)
 # Installa: cp scripts/git_hooks/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push
 
 set -e
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
-echo "🔍 Fractal Nova - Pre-push security scan (full repo)..."
+echo "🔍 FractalNova - Pre-push security scan (full repo)..."
 
 if command -v python &>/dev/null; then
   if python -m security.pre_commit_runner --root "$ROOT" --pre-push; then

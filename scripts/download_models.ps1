@@ -1,7 +1,7 @@
 # requires -Version 5.1
 param()
 
-Write-Host "Downloading Fractal Nova models from Hugging Face..."
+Write-Host "Downloading FractalNova models from Hugging Face..."
 
 $env:HF_TOKEN = if ($env:HF_TOKEN) { $env:HF_TOKEN } elseif ($env:HUGGINGFACE_HUB_TOKEN) { $env:HUGGINGFACE_HUB_TOKEN } else { $null }
 

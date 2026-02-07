@@ -1,4 +1,4 @@
-# Pipeline Red Team Testing - Fractal Nova
+# Pipeline Red Team Testing - FractalNova
 
 Simulazione attacco con codice malevolo controllato per **validare la detection** (pre-commit, secret scan, malware patterns).  
 **Solo in ambiente di test isolato (VM/container, branch `security-testing`).**

@@ -24,7 +24,7 @@ def run_full_pipeline(root: str = None, skip_sast_if_no_bandit: bool = True) -> 
     """
     root = root or os.getenv("SECURITY_ROOT", os.path.dirname(os.path.dirname(__file__)))
     report = {
-        "pipeline": "Fractal Nova Security Pipeline",
+        "pipeline": "FractalNova Security Pipeline",
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "root": root,
         "phases": {},

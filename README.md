@@ -1,6 +1,6 @@
-# Fractal Nova
+# FractalNova
 
-**Fractal Nova** è il sistema unificato per generare, rifinire e pubblicare libri con intelligenza artificiale, in locale. Nome progetto: **Fractal Nova** / **FractalNova**.
+**FractalNova** è il sistema unificato per generare, rifinire e pubblicare libri con intelligenza artificiale, in locale.
 
 **Repository:** [https://github.com/bytedacia/scribenova](https://github.com/bytedacia/scribenova)  
 Clone: `git clone https://github.com/bytedacia/scribenova.git`
@@ -118,7 +118,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\download_models.ps1
   - `GEMMA_LOCAL_MODEL_PATH`, `GEMMA_REPO_ID`, `GEMMA_REVISION`
   - `FLUX_MODEL_ID`, `FLUX_LOCAL_MODEL_PATH`, `FLUX_REPO_ID`, `FLUX_REVISION`
 - Hugging Face token: `HF_TOKEN` o `HUGGINGFACE_HUB_TOKEN`
-- **Fractal Nova UI (Gradio):** `FRACTALNOVA_PORT` (default 7860), `FRACTALNOVA_HOST` (default 0.0.0.0)
+- **FractalNova UI (Gradio):** `FRACTALNOVA_PORT` (default 7860), `FRACTALNOVA_HOST` (default 0.0.0.0)
 - **DeepSeek (app Gradio):** `DEEPSEEK_MODEL_PATH`, `DEEPSEEK_CONFIG_PATH` (fallback: `DEESEEK_*`)
 
 ### Sicurezza (consigliato)

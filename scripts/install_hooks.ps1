@@ -1,4 +1,4 @@
-# Fractal Nova - Installa Git hooks (pre-commit, pre-push) su Windows
+# FractalNova - Installa Git hooks (pre-commit, pre-push) su Windows
 # Esegui: powershell -ExecutionPolicy Bypass -File scripts/install_hooks.ps1
 
 $ErrorActionPreference = "Stop"

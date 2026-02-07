@@ -368,7 +368,7 @@ def extract_emails_from_url(url: str) -> list:
         # Only allow http/https and limit response size
         if not (url.startswith('http://') or url.startswith('https://')):
             return []
-        r = requests.get(url, timeout=20, headers={'User-Agent': 'Fractal Nova Bot/1.0'})
+        r = requests.get(url, timeout=20, headers={'User-Agent': 'FractalNova Bot/1.0'})
         if r.status_code == 200:
             text = r.text
             # Limit to first 1.5MB to avoid excessive memory
@@ -1358,7 +1358,7 @@ def main(
     with torch.device("cuda"):
         model = Transformer(args)
     tokenizer = AutoTokenizer.from_pretrained(ckpt_path)
-    tokenizer.decode(generate(model, [tokenizer.encode("Fractal Nova")], float('inf'), -1, 1.)[0])
+    tokenizer.decode(generate(model, [tokenizer.encode("FractalNova")], float('inf'), -1, 1.)[0])
     load_model(model, os.path.join(ckpt_path, f"model{rank}-mp{world_size}.safetensors"))
 
     if interactive:

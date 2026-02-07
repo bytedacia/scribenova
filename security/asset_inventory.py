@@ -1,6 +1,6 @@
 """
 Pipeline Fase 1 - Assessment: inventario asset critici, dipendenze, flusso dati.
-Fractal Nova - Sistema IA Gestione Libri.
+FractalNova - Sistema IA Gestione Libri.
 """
 import os
 import json

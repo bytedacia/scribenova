@@ -6,11 +6,11 @@ from typing import Dict, List, Any
 
 
 def get_threat_model_template() -> Dict[str, Any]:
-    """Template per threat modeling trimestrale - Fractal Nova."""
+    """Template per threat modeling trimestrale - FractalNova."""
     return {
         "version": "1.0",
         "last_updated": datetime.utcnow().isoformat() + "Z",
-        "project": "Fractal Nova",
+        "project": "FractalNova",
         "assets": [
             {"id": "A1", "name": "Modelli IA", "classification": "high", "description": "Pesi e config modelli"},
             {"id": "A2", "name": "Dati utente / libri", "classification": "high", "description": "Contenuti generati e metadati"},

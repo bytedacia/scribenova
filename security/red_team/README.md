@@ -1,4 +1,4 @@
-# Red Team Testing - Fractal Nova
+# Red Team Testing - FractalNova
 
 **⚠️ SOLO in ambiente di test isolato (VM/container, branch dedicato). Non eseguire in produzione.**
 

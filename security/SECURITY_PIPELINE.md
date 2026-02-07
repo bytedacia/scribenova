@@ -1,7 +1,7 @@
-# Pipeline di Sicurezza per Fractal Nova  
+# Pipeline di Sicurezza per FractalNova  
 ## Sistema IA di Gestione Libri — Piano di Implementazione
 
-*Documento di riferimento per l’implementazione e il mantenimento della sicurezza del sistema Fractal Nova. Allineato alle best practice OWASP, NIST e alle esigenze di sistemi basati su IA.*
+*Documento di riferimento per l’implementazione e il mantenimento della sicurezza del sistema FractalNova. Allineato alle best practice OWASP, NIST e alle esigenze di sistemi basati su IA.*
 
 ---
 
@@ -185,7 +185,7 @@
 
 ---
 
-## Mappatura con i componenti Fractal Nova
+## Mappatura con i componenti FractalNova
 
 | Fase pipeline | Componenti esistenti | Azioni consigliate |
 |---------------|----------------------|---------------------|

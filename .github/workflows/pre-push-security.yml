@@ -1,4 +1,4 @@
-# Fractal Nova - Pipeline protezione codice malevolo (pre-push / PR)
+# FractalNova - Pipeline protezione codice malevolo (pre-push / PR)
 # Secret scan, malware patterns, SAST, dependency, diff, hash, Gitleaks, Trivy
 
 name: Pre-push Security - Malware & Secret Protection
@@ -31,7 +31,7 @@ jobs:
           pip install -r requirements.txt
           pip install bandit safety 2>/dev/null || true
 
-      - name: Fractal Nova pre-commit runner (full)
+      - name: FractalNova pre-commit runner (full)
         id: runner
         run: |
           python -m security.pre_commit_runner --root "$GITHUB_WORKSPACE" --pre-push --json > precommit_report.json || echo '{"all_ok":true}' > precommit_report.json

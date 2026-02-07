@@ -30,7 +30,7 @@ def sanitize_model_output(text: Optional[str], max_length: int = 500000) -> str:
     return s
 
 
-def add_watermark_stub(text: str, marker: str = "Fractal Nova") -> str:
+def add_watermark_stub(text: str, marker: str = "FractalNova") -> str:
     """
     Stub per watermarking: aggiunge marker invisibile o in coda (per audit).
     In produzione usare tecniche specifiche (es. pattern di spacing).

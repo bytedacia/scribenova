@@ -1,12 +1,12 @@
 #!/bin/bash
-# Fractal Nova - Pre-commit hook: secret scan, malware patterns, SAST, dependency, hash, diff
+# FractalNova - Pre-commit hook: secret scan, malware patterns, SAST, dependency, hash, diff
 # Installa: cp scripts/git_hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
 
 set -e
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
-echo "🔍 Fractal Nova - Security scan in corso..."
+echo "🔍 FractalNova - Security scan in corso..."
 
 if command -v python &>/dev/null; then
   if python -m security.pre_commit_runner --root "$ROOT"; then

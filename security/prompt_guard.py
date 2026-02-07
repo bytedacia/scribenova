@@ -4,7 +4,7 @@ Pipeline Fase 8 - Sicurezza IA: validazione input per prevenire prompt injection
 import re
 from typing import List, Optional, Tuple
 
-# Pattern che suggeriscono tentativo di injection / override istruzioni (Fractal Nova)
+# Pattern che suggeriscono tentativo di injection / override istruzioni (FractalNova)
 INJECTION_PATTERNS = [
     (re.compile(r"ignore\s+(previous|above|all)\s+instructions?", re.I), "instruction_override"),
     (re.compile(r"forget\s+(everything|all)\s+above", re.I), "context_override"),

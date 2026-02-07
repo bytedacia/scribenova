@@ -2,7 +2,7 @@
 
 ## 1. PRE-COMMIT HOOKS LOCALI
 
-**Hook Git (Fractal Nova):**
+**Hook Git (FractalNova):**
 - **pre-commit**: analisi statica prima del commit (secret, malware, SAST, hash, diff)
 - **pre-push**: scansione completa repo prima del push
 
@@ -91,7 +91,7 @@ python -m security.hash_checker --build .
 ## 7. CI/CD (GitHub Actions)
 
 - **pre-push-security.yml**: su push/PR su main/master/develop
-  - Runner Fractal Nova (pre_commit_runner --pre-push)
+  - Runner FractalNova (pre_commit_runner --pre-push)
   - Gitleaks (secret)
   - Bandit, pip-audit, Trivy
   - Fail se `block_reasons` non vuoto

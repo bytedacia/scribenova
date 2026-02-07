@@ -1,4 +1,4 @@
-# Fractal Nova - Pre-commit framework (https://pre-commit.com)
+# FractalNova - Pre-commit framework (https://pre-commit.com)
 # Installa: pip install pre-commit && pre-commit install
 # Esegui manualmente: pre-commit run --all-files
 
@@ -6,8 +6,8 @@ repos:
   # Hook locale: runner sicurezza completo (secret, malware, SAST, hash, diff)
   - repo: local
     hooks:
-      - id: fractal-nova-security
-        name: Fractal Nova security (secret, malware, SAST, diff)
+      - id: fractalnova-security
+        name: FractalNova security (secret, malware, SAST, diff)
         entry: python -m security.pre_commit_runner
         language: system
         pass_filenames: false
