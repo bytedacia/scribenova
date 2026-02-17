@@ -9,10 +9,11 @@ Clone: `git clone https://github.com/bytedacia/scribenova.git`
 - Generazione principale con DeepSeek‑V3 (capitoli lunghi, nessun limite pratico di caratteri)
 - Umanizzazione/correzione con Qwen3
 - Titolo e sinossi con Llama 3 (poi umanizzati da Qwen3)
-- SEO con Gemma (keywords, meta, categorie)
+- SEO con Gemma/gemini (keywords, meta, categorie)
 - Copertina con FLUX (diffusers)
 - Export Word e Wattpad
 - Ricerca editori (Google CSE) ed email di proposta con allegati
+- pubblicazione on amazon kindle publishing 
 
 ## Modelli utilizzati
 - DeepSeek‑V3 (generatore principale) — [deepseek-ai/DeepSeek-V3](https://github.com/deepseek-ai/DeepSeek-V3.git)
