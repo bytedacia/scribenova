@@ -35,8 +35,9 @@ GPU supportate
 
 - NVIDIA RTX 50 Series
   - RTX 5090 (Prestazioni ottimali)
-  - RTX 5080
-  - RTX 5070
+  - RTX 5080  (ottime prestazioni)
+  - RTX 5070   (medie prestazioni)
+  - RTX 5070TI
 - NVIDIA RTX 40 Series
   - RTX 4090
   - RTX 4080 Super
